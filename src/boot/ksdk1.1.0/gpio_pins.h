@@ -2,7 +2,7 @@
 #define __FSL_GPIO_PINS_H__
 
 #include "fsl_gpio_driver.h"
-
+#define WARP_BUILD_ENABLE_THERMALCHAMBERANALYSIS
 /*
  *	On Warp, these are the alternative functions we have chosen:
  *
