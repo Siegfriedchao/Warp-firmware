@@ -1314,7 +1314,7 @@ main(void)
 	OSA_TimeDelay(1000);
 
 	enableI2Cpins(32767);
-	enableSssupply(2800); /* NAK when set to 3200 */
+	enableSssupply(2800);
 	WarpStatus i2cWriteStatusA, i2cWriteStatusB;
 
 	
@@ -1326,7 +1326,10 @@ main(void)
 	i2c_status_t	i2cStatus;
 	WarpStatus	status;
 
-	i2cAddress = 0x5A; /* current sensor addr, 7-bit */
+	uint8_t			par_g1, par_g3, res_heat_range, res_heat_val;
+	uint16_t		par_g2;
+
+	i2cAddress = 0x77; /* current sensor addr, 7-bit */
 
 	i2c_device_t slave =
 	{
@@ -1339,41 +1342,9 @@ main(void)
 	*/
 	OSA_TimeDelay(1000);
 
-	menuRegisterAddress = 0xF4; /*	configuration register	*/
+	menuRegisterAddress = 0x74; /*	ctrl_meas	*/
 	commandByte[0] = menuRegisterAddress;
-
-/*
-*https://narcisaam.github.io/Init_Device/
-*/
-
-	i2cStatus = I2C_DRV_MasterSendDataBlocking(
-				0 /*	I2C instance	*/,
-				&slave,
-				commandByte,
-				1,
-				NULL,
-				0,
-				500);
-	if(i2cStatus != kStatus_I2C_Success)
-	{
-		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
-	}
-
-	
-	OSA_TimeDelay(1000); /*	wait for the sensor to change to application mode	*/
-	/*
-After writing to MEAS_MODE to configure the sensor in mode 1-4, 
-run CCS811 for 20 minutes, before accurate readings are generated.*/
-
-	/* set up mode */
-	menuRegisterAddress = 0x01; /*	configuration register	*/
-	commandByte[0] = menuRegisterAddress;
-
-	/*
-	 *	resetting configuration register to make sure 
-	 *	all registers are properly set
-	 */
-	payloadByte[0] = 0b01000000; /*	constant power, measurement every 250ms */
+	payloadByte[0] = 0b00100101; /*	oversamplingx1 temp, oversamplingx1 pressure, forced mode */
 
 	i2cStatus = I2C_DRV_MasterSendDataBlocking(
 				0 /*	I2C instance	*/,
@@ -1388,30 +1359,75 @@ run CCS811 for 20 minutes, before accurate readings are generated.*/
 		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
 	}
 
-		/*	Essential writes complete, now check for the FW_MODE	*/
+	menuRegisterAddress = 0x72; /*	ctrl_hum	*/
+	commandByte[0] = menuRegisterAddress;
+	payloadByte[0] = 0b00000001; /*	oversampling humidity */
 
-	uint8_t		cmdBuf[1]; /* buffer to store the register address */
-	uint8_t		rcvBuf[2]; /* buffer to store I2C read values */
-	uint16_t	temperatureValue = 0;
-	i2c_status_t	returnValue; /* saved for use later in debugging */
+	i2cStatus = I2C_DRV_MasterSendDataBlocking(
+				0 /*	I2C instance	*/,
+				&slave,
+				commandByte,
+				1,
+				payloadByte,
+				1,
+				500);
+	if(i2cStatus != kStatus_I2C_Success)
+	{
+		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
+	}
 
-		cmdBuf[0] = 0x00; /* read-only current register address */
 
-		returnValue = I2C_DRV_MasterReceiveDataBlocking(
-								0 /* I2C peripheral instance */,
-								&slave,
-								cmdBuf,
-								1,
-								(uint8_t *)rcvBuf,
-								1,
-								500 /* timeout in milliseconds */);
+	menuRegisterAddress = 0x75; /*	config	*/
+	commandByte[0] = menuRegisterAddress;
+	payloadByte[0] = 0b00000100; /*	filter 001 */
 
-		if(returnValue != kStatus_I2C_Success)
-		{
-			SEGGER_RTT_printf(0, "\r\n\tI2C read failed, error %d.\n\n", returnValue);
-		}
+	i2cStatus = I2C_DRV_MasterSendDataBlocking(
+				0 /*	I2C instance	*/,
+				&slave,
+				commandByte,
+				1,
+				payloadByte,
+				1,
+				500);
+	if(i2cStatus != kStatus_I2C_Success)
+	{
+		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
+	}
 
-		OSA_TimeDelay(1000); /*	wait for the sensor to settle	*/
+
+	menuRegisterAddress = 0x71; /*	ctrl_gas_1	*/
+	commandByte[0] = menuRegisterAddress;
+	payloadByte[0] = 0b00010000; /*	run_gas to 1 and heater profile 0 */
+
+	i2cStatus = I2C_DRV_MasterSendDataBlocking(
+				0 /*	I2C instance	*/,
+				&slave,
+				commandByte,
+				1,
+				payloadByte,
+				1,
+				500);
+	if(i2cStatus != kStatus_I2C_Success)
+	{
+		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
+	}
+
+	menuRegisterAddress = 0x64; /*	gas_wait_0	*/
+	commandByte[0] = menuRegisterAddress;
+	payloadByte[0] = 0b0111001; /*	x4, 25ms = 100ms */
+
+	i2cStatus = I2C_DRV_MasterSendDataBlocking(
+				0 /*	I2C instance	*/,
+				&slave,
+				commandByte,
+				1,
+				payloadByte,
+				1,
+				500);
+	if(i2cStatus != kStatus_I2C_Success)
+	{
+		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
+	}
 
 
 	/*
@@ -1422,25 +1438,25 @@ run CCS811 for 20 minutes, before accurate readings are generated.*/
 	{
 
 	
-	cmdBuf[0] = 0x02; /* read-only current register address */
-
-		returnValue = I2C_DRV_MasterReceiveDataBlocking(
-								0 /* I2C peripheral instance */,
-								&slave,
-								cmdBuf,
-								1,
-								(uint8_t *)rcvBuf,
-								2,
-								500 /* timeout in milliseconds */);
-
-		if(returnValue != kStatus_I2C_Success)
-		{
-			SEGGER_RTT_printf(0, "\r\n\tI2C read failed, error %d.\n\n", returnValue);
-		}
-
-		temperatureValue = ((rcvBuf[0] & 0x03)<<8) + rcvBuf[1]; /*	MSB followed by LSB, current 5:0 (byte0 7:2), raw adc reading byte0 1:0 & byte1 7:0	*/
-		SEGGER_RTT_printf(0, "temp, %d\n",temperatureValue);
-		OSA_TimeDelay(1000); /*	wait for the sensor to settle	*/
+//	cmdBuf[0] = 0x02; /* read-only current register address */
+//
+//		returnValue = I2C_DRV_MasterReceiveDataBlocking(
+//								0 /* I2C peripheral instance */,
+//								&slave,
+//								cmdBuf,
+//								1,
+//								(uint8_t *)rcvBuf,
+//								2,
+//								500 /* timeout in milliseconds */);
+//
+//		if(returnValue != kStatus_I2C_Success)
+//		{
+//			SEGGER_RTT_printf(0, "\r\n\tI2C read failed, error %d.\n\n", returnValue);
+//		}
+//
+//		temperatureValue = ((rcvBuf[0] & 0x03)<<8) + rcvBuf[1]; /*	MSB followed by LSB, current 5:0 (byte0 7:2), raw adc reading byte0 1:0 & byte1 7:0	*/
+//		SEGGER_RTT_printf(0, "temp, %d\n",temperatureValue);
+//		OSA_TimeDelay(1000); /*	wait for the sensor to settle	*/
 	}
 
 		return 0;
