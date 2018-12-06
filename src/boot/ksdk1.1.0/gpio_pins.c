@@ -3,7 +3,6 @@
 #include "gpio_pins.h"
 #include "device/fsl_device_registers.h"
 
-#define WARP_BUILD_ENABLE_THERMALCHAMBERANALYSIS
 
 /*
  *	See Section 12.1.1 "GPIO instantiation information" of KL03 family reference, KL03P24M48SF0RM.pdf

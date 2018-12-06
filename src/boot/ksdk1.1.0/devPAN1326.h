@@ -36,7 +36,7 @@
 */
 
 #ifndef WARP_BUILD_ENABLE_DEVPAN1326
-#define WARP_BUILD_ENABLE_DEVPAN1326
+//#define WARP_BUILD_ENABLE_DEVPAN1326
 #endif
 
 void	initPAN1326B(WarpUARTDeviceState volatile *  deviceStatePointer);

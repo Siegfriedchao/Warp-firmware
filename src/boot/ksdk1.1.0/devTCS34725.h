@@ -36,7 +36,7 @@
 */
 
 #ifndef WARP_BUILD_ENABLE_DEVTCS34725
-#define WARP_BUILD_ENABLE_DEVTCS34725
+//#define WARP_BUILD_ENABLE_DEVTCS34725
 #endif
 
 void		initTCS34725(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer);

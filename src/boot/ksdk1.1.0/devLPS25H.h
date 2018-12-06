@@ -36,7 +36,7 @@
 */
 
 #ifndef WARP_BUILD_ENABLE_DEVLPS25H
-#define WARP_BUILD_ENABLE_DEVLPS25H
+//#define WARP_BUILD_ENABLE_DEVLPS25H
 #endif
 
 void		initLPS25H(const uint8_t i2cAddress, WarpI2CDeviceState volatile *  deviceStatePointer);
