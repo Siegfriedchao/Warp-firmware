@@ -1407,20 +1407,6 @@ explained in section 4.2.5.
 								&slave,
 								cmdBuf,
 								1,
-								NULL,
-								0,
-								500 /* timeout in milliseconds */);
-
-		if(returnValue != kStatus_I2C_Success)
-		{
-			SEGGER_RTT_printf(0, "\r\n\tI2C read failed, error %d.\n\n", returnValue);
-		}
-
-		returnValue = I2C_DRV_MasterReceiveDataBlocking(
-								0 /* I2C peripheral instance */,
-								&slave,
-								cmdBuf,
-								0,
 								(uint8_t *)rcvBuf,
 								6,
 								500 /* timeout in milliseconds */);

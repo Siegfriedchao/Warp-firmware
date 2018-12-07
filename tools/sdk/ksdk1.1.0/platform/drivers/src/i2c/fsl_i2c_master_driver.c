@@ -774,19 +774,26 @@ static i2c_status_t I2C_DRV_MasterReceive(uint32_t instance,
         {
             I2C_HAL_SendNak(baseAddr);
         }
-        else
-        {
-            I2C_HAL_SendAck(baseAddr);
-        }
 
         /* Dummy read to trigger receive of next byte in interrupt. */
         I2C_HAL_ReadByte(baseAddr);
+        SEGGER_RTT_printf(0, "\r\n\trxSize is %d.\n\n", rxSize);
 
-        if (isBlocking)
+        while(isBlocking && (rxSize--))
         {
             /* Wait for the transfer to finish.*/
             I2C_DRV_MasterWait(instance, timeout_ms);
+            SEGGER_RTT_printf(0, "\r\n\trxSize is %d.\n\n", rxSize);
+            if (rxSize == 0)
+            {
+                I2C_HAL_SendStop(baseAddr);
+            }
+            if (rxSize == 1)
+            {
+                I2C_HAL_SendNak(baseAddr);
+            }
         }
+
     }
     else if (master->status == kStatus_I2C_Timeout)
     {
