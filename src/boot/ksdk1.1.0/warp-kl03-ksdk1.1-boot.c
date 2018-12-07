@@ -1314,7 +1314,7 @@ main(void)
 	OSA_TimeDelay(1000);
 
 	enableI2Cpins(32767);
-	enableSssupply(2800);
+	enableSssupply(3300); /*	2800 could not turn it on	*/
 	WarpStatus i2cWriteStatusA, i2cWriteStatusB;
 
 	
@@ -1329,7 +1329,7 @@ main(void)
 	uint8_t			par_g1, par_g3, res_heat_range, res_heat_val;
 	uint16_t		par_g2;
 
-	i2cAddress = 0x77; /* current sensor addr, 7-bit */
+	i2cAddress = 0x11; /* current sensor addr, 7-bit */
 
 	i2c_device_t slave =
 	{
@@ -1342,9 +1342,28 @@ main(void)
 	*/
 	OSA_TimeDelay(1000);
 
-	menuRegisterAddress = 0x74; /*	ctrl_meas	*/
+
+	menuRegisterAddress = 0b10100000; /*	command register, auto-increment protocol	*/
 	commandByte[0] = menuRegisterAddress;
-	payloadByte[0] = 0b00100101; /*	oversamplingx1 temp, oversamplingx1 pressure, forced mode */
+
+	i2cStatus = I2C_DRV_MasterSendDataBlocking(
+				0 /*	I2C instance	*/,
+				&slave,
+				commandByte,
+				1,
+				NULL,
+				0,
+				500);
+	if(i2cStatus != kStatus_I2C_Success)
+	{
+		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
+	}
+	
+	OSA_TimeDelay(1000);
+
+	menuRegisterAddress = 0x00; /*	ctrl_meas	*/
+	commandByte[0] = menuRegisterAddress;
+	payloadByte[0] = 0b00000011; /*	RGBC enable, power on */
 
 	i2cStatus = I2C_DRV_MasterSendDataBlocking(
 				0 /*	I2C instance	*/,
@@ -1359,9 +1378,11 @@ main(void)
 		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
 	}
 
-	menuRegisterAddress = 0x72; /*	ctrl_hum	*/
+	OSA_TimeDelay(1000);
+
+	menuRegisterAddress = 0x01; /*	RGBC timing register	*/
 	commandByte[0] = menuRegisterAddress;
-	payloadByte[0] = 0b00000001; /*	oversampling humidity */
+	payloadByte[0] = 0xC0; /*	154ms, 65535 max count */
 
 	i2cStatus = I2C_DRV_MasterSendDataBlocking(
 				0 /*	I2C instance	*/,
@@ -1376,10 +1397,11 @@ main(void)
 		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
 	}
 
+	OSA_TimeDelay(1000);
 
-	menuRegisterAddress = 0x75; /*	config	*/
+	menuRegisterAddress = 0x0F; /*	ctrl_hum	*/
 	commandByte[0] = menuRegisterAddress;
-	payloadByte[0] = 0b00000100; /*	filter 001 */
+	payloadByte[0] = 0b00000000; /*	RGBC gain 1x */
 
 	i2cStatus = I2C_DRV_MasterSendDataBlocking(
 				0 /*	I2C instance	*/,
@@ -1393,70 +1415,62 @@ main(void)
 	{
 		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
 	}
-
-
-	menuRegisterAddress = 0x71; /*	ctrl_gas_1	*/
-	commandByte[0] = menuRegisterAddress;
-	payloadByte[0] = 0b00010000; /*	run_gas to 1 and heater profile 0 */
-
-	i2cStatus = I2C_DRV_MasterSendDataBlocking(
-				0 /*	I2C instance	*/,
-				&slave,
-				commandByte,
-				1,
-				payloadByte,
-				1,
-				500);
-	if(i2cStatus != kStatus_I2C_Success)
-	{
-		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
-	}
-
-	menuRegisterAddress = 0x64; /*	gas_wait_0	*/
-	commandByte[0] = menuRegisterAddress;
-	payloadByte[0] = 0b0111001; /*	x4, 25ms = 100ms */
-
-	i2cStatus = I2C_DRV_MasterSendDataBlocking(
-				0 /*	I2C instance	*/,
-				&slave,
-				commandByte,
-				1,
-				payloadByte,
-				1,
-				500);
-	if(i2cStatus != kStatus_I2C_Success)
-	{
-		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
-	}
-
 
 	/*
 	 *	I2C read operations
 	 */
+	uint8_t		cmdBuf[1]; /* buffer to store the register address */
+	uint8_t		rcvBuf[8]; /* buffer to store I2C read values */
+	uint16_t	CValue = 0;
+	uint16_t	RValue = 0;
+	uint16_t	GValue = 0;
+	uint16_t	BValue = 0;
+	i2c_status_t	returnValue; /* saved for use later in debugging */
+
+	OSA_TimeDelay(1000);
 
 	while(1)
 	{
+			menuRegisterAddress = 0b10100000; /*	command register, auto-increment protocol	*/
+	commandByte[0] = menuRegisterAddress;
 
-	
-//	cmdBuf[0] = 0x02; /* read-only current register address */
-//
-//		returnValue = I2C_DRV_MasterReceiveDataBlocking(
-//								0 /* I2C peripheral instance */,
-//								&slave,
-//								cmdBuf,
-//								1,
-//								(uint8_t *)rcvBuf,
-//								2,
-//								500 /* timeout in milliseconds */);
-//
-//		if(returnValue != kStatus_I2C_Success)
-//		{
-//			SEGGER_RTT_printf(0, "\r\n\tI2C read failed, error %d.\n\n", returnValue);
-//		}
-//
-//		temperatureValue = ((rcvBuf[0] & 0x03)<<8) + rcvBuf[1]; /*	MSB followed by LSB, current 5:0 (byte0 7:2), raw adc reading byte0 1:0 & byte1 7:0	*/
-//		SEGGER_RTT_printf(0, "temp, %d\n",temperatureValue);
-//		OSA_TimeDelay(1000); /*	wait for the sensor to settle	*/
+	i2cStatus = I2C_DRV_MasterSendDataBlocking(
+				0 /*	I2C instance	*/,
+				&slave,
+				commandByte,
+				1,
+				NULL,
+				0,
+				500);
+	if(i2cStatus != kStatus_I2C_Success)
+	{
+		SEGGER_RTT_printf(0, "\r\n\tI2C write failed, error %d.\n\n", i2cStatus);
+	}
+
+	OSA_TimeDelay(1000);
+		cmdBuf[0] = 0x14; /* read-only current register address */
+
+		returnValue = I2C_DRV_MasterReceiveDataBlocking(
+								0 /* I2C peripheral instance */,
+								&slave,
+								cmdBuf,
+								1,
+								(uint8_t *)rcvBuf,
+								8,
+								500 /* timeout in milliseconds */);
+
+		if(returnValue != kStatus_I2C_Success)
+		{
+			SEGGER_RTT_printf(0, "\r\n\tI2C read failed, error %d.\n\n", returnValue);
+		}
+
+		CValue = (rcvBuf[1]<<8) + rcvBuf[0]; /*	LSB followed by MSB	*/
+		RValue = (rcvBuf[3]<<8) + rcvBuf[2]; /*	LSB followed by MSB	*/
+		GValue = (rcvBuf[5]<<8) + rcvBuf[4]; /*	LSB followed by MSB	*/
+		BValue = (rcvBuf[7]<<8) + rcvBuf[6]; /*	LSB followed by MSB	*/
+
+		SEGGER_RTT_printf(0, "C%d, R%d, G%d, B%d\n",CValue, RValue, GValue, BValue);
+		OSA_TimeDelay(10); /*	wait for the sensor to settle	*/
 	}
 
 		return 0;
