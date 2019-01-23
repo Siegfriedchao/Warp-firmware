@@ -58,20 +58,20 @@
 /*
 *	Comment out the header file to disable devices
 */
-#include "devBMX055.h"
-#include "devADXL362.h"
+//#include "devBMX055.h"
+//#include "devADXL362.h"
 #include "devMMA8451Q.h"
-#include "devLPS25H.h"
-#include "devHDC1000.h"
-#include "devMAG3110.h"
-#include "devSI7021.h"
-#include "devL3GD20H.h"
-#include "devBME680.h"
-#include "devTCS34725.h"
-#include "devSI4705.h"
-#include "devCCS811.h"
-#include "devAMG8834.h"
-#include "devPAN1326.h"
+//#include "devLPS25H.h"
+//#include "devHDC1000.h"
+//#include "devMAG3110.h"
+//#include "devSI7021.h"
+//#include "devL3GD20H.h"
+//#include "devBME680.h"
+//#include "devTCS34725.h"
+//#include "devSI4705.h"
+//#include "devCCS811.h"
+//#include "devAMG8834.h"
+//include "devPAN1326.h"
 #include "devAS7262.h"
 #include "devAS7263.h"
 
@@ -1216,7 +1216,7 @@ main(void)
 #endif
 
 #ifdef WARP_BUILD_ENABLE_DEVMMA8451Q
-	initMMA8451Q(	0x1C	/* i2cAddress */,	&deviceMMA8451QState	);
+	initMMA8451Q(	0x1D	/* i2cAddress */,	&deviceMMA8451QState	);
 #endif	
 
 #ifdef WARP_BUILD_ENABLE_DEVLPS25H
@@ -2388,7 +2388,8 @@ main(void)
 					#endif
 					#ifdef WARP_BUILD_ENABLE_DEVMMA8451Q
 					configureSensorMMA8451Q(0x00,/* Payload: Disable FIFO */
-								0x01,/* Normal read 8bit, 800Hz, normal, active mode */
+								0b00000000,/* Normal read 8bit, 800Hz, normal, active mode */ 
+								0x01,
 								menuI2cPullupValue
 								);
 					#endif

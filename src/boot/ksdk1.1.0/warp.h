@@ -168,7 +168,7 @@ typedef struct
 	/*
 	 *	TODO: for now, magic numbers for buffer sizes
 	 */
-	uint8_t			i2cBuffer[2];
+	uint8_t			i2cBuffer[10];
 
 	WarpStatus		deviceStatus;
 } WarpI2CDeviceState;
